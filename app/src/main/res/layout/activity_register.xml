@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center_horizontal"
+        android:padding="32dp">
+
+        <ImageView
+            android:layout_width="90dp"
+            android:layout_height="90dp"
+            android:layout_marginTop="35dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="GroundWatch Logo" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Create Account"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="Join GroundWatch"
+            android:textSize="15sp" />
+
+        <EditText
+            android:id="@+id/etName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="35dp"
+            android:hint="Full Name"
+            android:inputType="textPersonName"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etEmail"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Email"
+            android:inputType="textEmailAddress"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Password"
+            android:inputType="textPassword"
+            android:padding="12dp" />
+
+        <EditText
+            android:id="@+id/etConfirmPassword"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:hint="Confirm Password"
+            android:inputType="textPassword"
+            android:padding="12dp" />
+
+        <Button
+            android:id="@+id/btnRegister"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
+            android:text="Register" />
+
+        <TextView
+            android:id="@+id/tvLogin"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:text="Already have an account? Login"
+            android:textSize="15sp"
+            android:clickable="true"
+            android:focusable="true" />
+
+    </LinearLayout>
+
+</ScrollView>

@@ -1,5 +1,6 @@
 package com.example.groundwatch;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -29,13 +30,10 @@ public class MainActivity extends AppCompatActivity {
 
         btnLogin.setOnClickListener(v -> validateLogin());
 
-        tvRegister.setOnClickListener(v ->
-                Toast.makeText(
-                        MainActivity.this,
-                        "Registration screen coming soon",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        tvRegister.setOnClickListener(v -> {
+            Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
+            startActivity(intent);
+        });
     }
 
     private void validateLogin() {
