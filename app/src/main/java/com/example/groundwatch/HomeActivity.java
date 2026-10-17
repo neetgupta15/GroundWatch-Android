@@ -37,6 +37,8 @@ public class HomeActivity extends AppCompatActivity {
             }
         }
 
+
+
         setContentView(R.layout.activity_home);
 
         String name = getSharedPreferences(
@@ -70,5 +72,36 @@ public class HomeActivity extends AppCompatActivity {
                                 ProfileActivity.class
                         )
                 ));
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (isFinishing() || !Session.require(this, false)) {
+            return;
+        }
+
+        TextView addressView = findViewById(
+                R.id.tvFacilityAddress
+        );
+
+        if (addressView == null) {
+            return;
+        }
+
+        try (DBHelper db = new DBHelper(this)) {
+
+            String[] site = db.getSite();
+
+            String address = site[2].isEmpty()
+                    ? "Address not configured. Contact the administrator."
+                    : site[2];
+
+            addressView.setText(
+                    site[0]
+                            + "\nType: " + site[1]
+                            + "\nAddress: " + address
+            );
+        }
     }
 }

@@ -25,6 +25,30 @@
             android:text="Review problems, assign severity and track maintenance."
             android:textSize="16sp" />
 
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Facility Details"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvAdminAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:textSize="16sp"
+            android:padding="12dp"
+            android:background="#F0EAF8" />
+
+        <Button
+            android:id="@+id/btnEditAddress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Edit Facility and Address" />
+
         <Button
             android:id="@+id/btnReviewProblems"
             android:layout_width="match_parent"

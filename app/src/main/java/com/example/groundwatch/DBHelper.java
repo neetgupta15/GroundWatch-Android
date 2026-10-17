@@ -10,7 +10,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 public class DBHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "GroundWatch.db";
-    private static final int DATABASE_VERSION = 1;
+    private static final int DATABASE_VERSION = 2;
 
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -18,6 +18,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     @Override
     public void onCreate(SQLiteDatabase db) {
+        createSiteTable(db);
 
         // Users table
         db.execSQL(
@@ -96,8 +97,15 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     @Override
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        // Preserve existing user and report data.
+    public void onUpgrade(
+            SQLiteDatabase db,
+            int oldVersion,
+            int newVersion
+    ) {
+
+        if (oldVersion < 2) {
+            createSiteTable(db);
+        }
     }
 
     // Register a new user.
@@ -397,6 +405,77 @@ public class DBHelper extends SQLiteOpenHelper {
                 values,
                 "report_id = ?",
                 new String[]{String.valueOf(reportId)}
+        );
+
+        return updatedRows == 1;
+    }
+
+    private void createSiteTable(SQLiteDatabase db) {
+
+        db.execSQL(
+                "CREATE TABLE IF NOT EXISTS Site (" +
+                        "id INTEGER PRIMARY KEY CHECK(id = 1), " +
+                        "name TEXT NOT NULL, " +
+                        "type TEXT NOT NULL, " +
+                        "address TEXT NOT NULL)"
+        );
+
+        db.execSQL(
+                "INSERT OR IGNORE INTO Site " +
+                        "(id, name, type, address) VALUES " +
+                        "(1, 'NMIMS Shirpur Sports Facility', 'Private', '')"
+        );
+    }
+
+    public String[] getSite() {
+
+        try (Cursor cursor = getReadableDatabase().rawQuery(
+                "SELECT name, type, address FROM Site WHERE id = 1",
+                null
+        )) {
+
+            if (cursor.moveToFirst()) {
+                return new String[]{
+                        cursor.getString(0),
+                        cursor.getString(1),
+                        cursor.getString(2)
+                };
+            }
+        }
+
+        return new String[]{"", "Private", ""};
+    }
+
+    public boolean updateSite(
+            String adminEmail,
+            String name,
+            String type,
+            String address
+    ) {
+
+        if (!"admin".equals(getUserRole(adminEmail))) {
+            return false;
+        }
+
+        if (name.trim().isEmpty() || address.trim().isEmpty()) {
+            return false;
+        }
+
+        if (!"Public".equals(type) && !"Private".equals(type)) {
+            return false;
+        }
+
+        ContentValues values = new ContentValues();
+
+        values.put("name", name.trim());
+        values.put("type", type);
+        values.put("address", address.trim());
+
+        int updatedRows = getWritableDatabase().update(
+                "Site",
+                values,
+                "id = 1",
+                null
         );
 
         return updatedRows == 1;
