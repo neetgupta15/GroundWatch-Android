@@ -278,7 +278,7 @@ public class DBHelper extends SQLiteOpenHelper {
             String newStatus
     ) {
 
-        if (!"admin".equals(getUserRole(adminEmail))) {
+        if (!"admin".equals(getUserRole(email))) {
             return false;
         }
 
