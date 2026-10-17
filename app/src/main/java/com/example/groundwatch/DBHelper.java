@@ -84,6 +84,27 @@ public class DBHelper extends SQLiteOpenHelper {
         return exists;
     }
 
+    public String getUserName(String email) {
+
+        SQLiteDatabase db = this.getReadableDatabase();
+
+        Cursor cursor = db.rawQuery(
+                "SELECT name FROM Users WHERE email = ?",
+                new String[]{email}
+        );
+
+        String name = "";
+
+        if (cursor.moveToFirst()) {
+            name = cursor.getString(0);
+        }
+
+        cursor.close();
+        db.close();
+
+        return name;
+    }
+
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         // Database upgrade logic will be added when required.

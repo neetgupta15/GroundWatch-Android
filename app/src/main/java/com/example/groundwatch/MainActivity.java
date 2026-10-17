@@ -2,6 +2,7 @@
 package com.example.groundwatch;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Patterns;
@@ -26,19 +27,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize the database helper
         dbHelper = new DBHelper(this);
 
-        // Connect XML views
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         tvRegister = findViewById(R.id.tvRegister);
 
-        // Login button
         btnLogin.setOnClickListener(v -> validateLogin());
 
-        // Open Registration screen
         tvRegister.setOnClickListener(v -> {
             Intent intent = new Intent(
                     MainActivity.this,
@@ -53,7 +50,6 @@ public class MainActivity extends AppCompatActivity {
         String email = etEmail.getText().toString().trim();
         String password = etPassword.getText().toString();
 
-        // Validate email
         if (TextUtils.isEmpty(email)) {
             etEmail.setError("Enter your email");
             etEmail.requestFocus();
@@ -66,7 +62,6 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Validate password
         if (TextUtils.isEmpty(password)) {
             etPassword.setError("Enter your password");
             etPassword.requestFocus();
@@ -81,10 +76,19 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        // Check credentials in SQLite
         boolean validUser = dbHelper.checkUser(email, password);
 
         if (validUser) {
+
+            String name = dbHelper.getUserName(email);
+
+            SharedPreferences preferences =
+                    getSharedPreferences("GroundWatchPrefs", MODE_PRIVATE);
+
+            preferences.edit()
+                    .putString("userName", name)
+                    .putString("userEmail", email)
+                    .apply();
 
             Toast.makeText(
                     MainActivity.this,
