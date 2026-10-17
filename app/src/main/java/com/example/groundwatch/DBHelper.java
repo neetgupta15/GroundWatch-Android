@@ -205,7 +205,7 @@ public class DBHelper extends SQLiteOpenHelper {
             values.put("facility_id", facilityId);
             values.put("category", category);
             values.put("description", description);
-            values.put("severity", severity);
+            values.put("severity", "Unassigned");
             values.put("status", "Reported");
             values.put("date", date);
 
