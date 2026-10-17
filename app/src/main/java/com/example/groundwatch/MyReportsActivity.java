@@ -1,4 +1,3 @@
-
 package com.example.groundwatch;
 
 import android.database.Cursor;
@@ -21,79 +20,85 @@ public class MyReportsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        if (!Session.require(this, true)) {
+            return;
+        }
+
         setContentView(R.layout.activity_my_reports);
 
         lvMyReports = findViewById(R.id.lvMyReports);
         tvNoReports = findViewById(R.id.tvNoReports);
 
         dbHelper = new DBHelper(this);
+    }
 
-        loadReports();
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (dbHelper != null && Session.require(this, true)) {
+            loadReports();
+        }
     }
 
     private void loadReports() {
 
-        String email = getSharedPreferences(
-                "GroundWatchPrefs", MODE_PRIVATE
-        ).getString("userEmail", "");
-
         ArrayList<String> reportList = new ArrayList<>();
 
-        if (email == null || email.isEmpty()) {
-            showMessage("Please log in again to view your reports.");
-            return;
-        }
+        try (Cursor cursor =
+                     dbHelper.getAllReportsForMaintenance()) {
 
-        Cursor cursor = dbHelper.getReportsByUser(email);
-
-        try {
             while (cursor.moveToNext()) {
 
-                String facility = cursor.getString(1);
-                String category = cursor.getString(2);
-                String description = cursor.getString(3);
-                String severity = cursor.getString(4);
-                String status = cursor.getString(5);
-                String date = cursor.getString(6);
-
                 String report =
-                        "Facility: " + facility +
-                                "\nProblem: " + category +
-                                "\nDescription: " + description +
-                                "\nSeverity: " + severity +
-                                "\nStatus: " + status +
-                                "\nDate: " + date;
+                        "Report #" + cursor.getInt(0)
+                                + "\nReported by: "
+                                + display(cursor.getString(1))
+                                + "\nFacility: "
+                                + display(cursor.getString(2))
+                                + "\nProblem: "
+                                + display(cursor.getString(3))
+                                + "\nDescription: "
+                                + display(cursor.getString(4))
+                                + "\nSeverity: "
+                                + display(cursor.getString(5))
+                                + "\nStatus: "
+                                + display(cursor.getString(6))
+                                + "\nDate: "
+                                + display(cursor.getString(7));
 
                 reportList.add(report);
             }
-        } finally {
-            cursor.close();
         }
 
+        lvMyReports.setAdapter(
+                new ArrayAdapter<>(
+                        this,
+                        android.R.layout.simple_list_item_1,
+                        reportList
+                )
+        );
+
         if (reportList.isEmpty()) {
-            showMessage("No reports submitted yet.");
+            tvNoReports.setText("No reports submitted yet.");
+            tvNoReports.setVisibility(View.VISIBLE);
+            lvMyReports.setVisibility(View.GONE);
         } else {
             tvNoReports.setVisibility(View.GONE);
             lvMyReports.setVisibility(View.VISIBLE);
-
-            ArrayAdapter<String> adapter = new ArrayAdapter<>(
-                    this,
-                    android.R.layout.simple_list_item_1,
-                    reportList
-            );
-
-            lvMyReports.setAdapter(adapter);
         }
     }
 
-    private void showMessage(String message) {
-        tvNoReports.setText(message);
-        tvNoReports.setVisibility(View.VISIBLE);
-        lvMyReports.setVisibility(View.GONE);
+    private String display(String value) {
+        return value == null || value.trim().isEmpty()
+                ? "Not provided"
+                : value;
     }
 
     @Override
     protected void onDestroy() {
+
         if (dbHelper != null) {
             dbHelper.close();
         }

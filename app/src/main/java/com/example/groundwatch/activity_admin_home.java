@@ -1,24 +1,44 @@
 package com.example.groundwatch;
 
+import android.content.Intent;
 import android.os.Bundle;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class activity_admin_home extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
+
+        if (!Session.require(this, true)) {
+            return;
+        }
+
         setContentView(R.layout.activity_admin_home);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
-        });
+
+        findViewById(R.id.btnReviewProblems)
+                .setOnClickListener(v -> startActivity(
+                        new Intent(
+                                this,
+                                MaintenanceActivity.class
+                        )
+                ));
+
+        findViewById(R.id.btnAdminReports)
+                .setOnClickListener(v -> startActivity(
+                        new Intent(
+                                this,
+                                MyReportsActivity.class
+                        )
+                ));
+
+        findViewById(R.id.btnAdminProfile)
+                .setOnClickListener(v -> startActivity(
+                        new Intent(
+                                this,
+                                ProfileActivity.class
+                        )
+                ));
     }
 }

@@ -10,7 +10,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Maintenance Tracking"
+        android:text="Review Problems"
         android:textSize="26sp"
         android:textStyle="bold"
         android:textColor="#173F35"
@@ -19,7 +19,7 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Tap any report to update its maintenance status."
+        android:text="Tap a report to assign severity or update maintenance status."
         android:textSize="14sp"
         android:textColor="#555555"
         android:layout_marginBottom="16dp" />

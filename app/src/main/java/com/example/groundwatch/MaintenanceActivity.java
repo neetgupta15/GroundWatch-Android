@@ -35,6 +35,9 @@ public class MaintenanceActivity extends AppCompatActivity  {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (!Session.require(this, true)) {
+            return;
+        }
         setContentView(R.layout.activity_maintenance);
 
         listMaintenance = findViewById(R.id.listMaintenance);
@@ -57,12 +60,66 @@ public class MaintenanceActivity extends AppCompatActivity  {
 
         btnMaintenanceBack.setOnClickListener(v -> finish());
 
-        listMaintenance.setOnItemClickListener((parent, view, position, id) -> {
-            int reportId = reportIds.get(position);
-            showStatusDialog(reportId);
-        });
+        listMaintenance.setOnItemClickListener(
+                (parent, view, position, id) -> {
 
+                    int reportId = reportIds.get(position);
+
+                    new AlertDialog.Builder(this)
+                            .setTitle("Report #" + reportId)
+                            .setItems(
+                                    new String[]{
+                                            "Assign Severity",
+                                            "Update Maintenance Status"
+                                    },
+                                    (dialog, which) -> {
+
+                                        if (which == 0) {
+                                            showSeverityDialog(reportId);
+                                        } else {
+                                            showStatusDialog(reportId);
+                                        }
+                                    }
+                            )
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                }
+        );
         loadReports();
+    }
+
+    private void showSeverityDialog(int reportId) {
+
+        String[] levels = {
+                "Low",
+                "Medium",
+                "High"
+        };
+
+        new AlertDialog.Builder(this)
+                .setTitle("Assign Severity: Report #" + reportId)
+                .setItems(levels, (dialog, which) -> {
+
+                    boolean updated = dbHelper.updateReportSeverity(
+                            Session.email(this),
+                            reportId,
+                            levels[which]
+                    );
+
+                    Toast.makeText(
+                            this,
+                            updated
+                                    ? "Severity updated to " + levels[which]
+                                    : "Unable to update severity",
+                            Toast.LENGTH_SHORT
+                    ).show();
+
+                    if (updated) {
+                        loadReports();
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     @Override
@@ -152,6 +209,7 @@ public class MaintenanceActivity extends AppCompatActivity  {
             String selectedStatus = statuses[which];
 
             boolean updated = dbHelper.updateReportStatus(
+                    Session.email(this),
                     reportId,
                     selectedStatus
             );

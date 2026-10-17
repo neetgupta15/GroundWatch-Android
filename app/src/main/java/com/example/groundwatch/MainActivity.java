@@ -38,14 +38,11 @@ public class MainActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> validateLogin());
 
         tvRegister.setOnClickListener(v -> {
-            String role = dbHelper.getUserRole(String.valueOf(etEmail));
-
             Intent intent = new Intent(
                     MainActivity.this,
-                    "admin".equals(role)
-                            ? activity_admin_home.class
-                            : HomeActivity.class
+                    RegisterActivity.class
             );
+
             startActivity(intent);
         });
     }
@@ -101,9 +98,13 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT
             ).show();
 
+            String role = dbHelper.getUserRole(email);
+
             Intent intent = new Intent(
                     MainActivity.this,
-                    HomeActivity.class
+                    "admin".equals(role)
+                            ? activity_admin_home.class
+                            : HomeActivity.class
             );
 
             startActivity(intent);

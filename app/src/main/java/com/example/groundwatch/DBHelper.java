@@ -273,7 +273,14 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     // Update a report's maintenance status.
-    public boolean updateReportStatus(int reportId, String newStatus) {
+    public boolean updateReportStatus(
+            String email, int reportId,
+            String newStatus
+    ) {
+
+        if (!"admin".equals(getUserRole(adminEmail))) {
+            return false;
+        }
 
         if (!"Pending".equals(newStatus)
                 && !"In Progress".equals(newStatus)
@@ -366,6 +373,35 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
+    public boolean updateReportSeverity(
+            String adminEmail,
+            int reportId,
+            String severity
+    ) {
+
+        if (!"admin".equals(getUserRole(adminEmail))) {
+            return false;
+        }
+
+        if (!"Low".equals(severity)
+                && !"Medium".equals(severity)
+                && !"High".equals(severity)) {
+            return false;
+        }
+
+        ContentValues values = new ContentValues();
+        values.put("severity", severity);
+
+        int updatedRows = getWritableDatabase().update(
+                "Reports",
+                values,
+                "report_id = ?",
+                new String[]{String.valueOf(reportId)}
+        );
+
+        return updatedRows == 1;
+    }
+
     // Get the sport associated with a facility.
     private String getSportForFacility(SQLiteDatabase db, String facilityName) {
 
@@ -383,4 +419,5 @@ public class DBHelper extends SQLiteOpenHelper {
             cursor.close();
         }
     }
+
 }
