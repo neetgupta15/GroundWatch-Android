@@ -1,3 +1,4 @@
+
 package com.example.groundwatch;
 
 import android.content.Intent;
@@ -18,20 +19,31 @@ public class MainActivity extends AppCompatActivity {
     private Button btnLogin;
     private TextView tvRegister;
 
+    private DBHelper dbHelper;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        // Initialize the database helper
+        dbHelper = new DBHelper(this);
+
+        // Connect XML views
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
         btnLogin = findViewById(R.id.btnLogin);
         tvRegister = findViewById(R.id.tvRegister);
 
+        // Login button
         btnLogin.setOnClickListener(v -> validateLogin());
 
+        // Open Registration screen
         tvRegister.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, RegisterActivity.class);
+            Intent intent = new Intent(
+                    MainActivity.this,
+                    RegisterActivity.class
+            );
             startActivity(intent);
         });
     }
@@ -39,8 +51,9 @@ public class MainActivity extends AppCompatActivity {
     private void validateLogin() {
 
         String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString().trim();
+        String password = etPassword.getText().toString();
 
+        // Validate email
         if (TextUtils.isEmpty(email)) {
             etEmail.setError("Enter your email");
             etEmail.requestFocus();
@@ -53,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // Validate password
         if (TextUtils.isEmpty(password)) {
             etPassword.setError("Enter your password");
             etPassword.requestFocus();
@@ -60,13 +74,47 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (password.length() < 6) {
-            etPassword.setError("Password must contain at least 6 characters");
+            etPassword.setError(
+                    "Password must contain at least 6 characters"
+            );
             etPassword.requestFocus();
             return;
         }
 
-        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-        startActivity(intent);
-        finish();
+        // Check credentials in SQLite
+        boolean validUser = dbHelper.checkUser(email, password);
+
+        if (validUser) {
+
+            Toast.makeText(
+                    MainActivity.this,
+                    "Login successful",
+                    Toast.LENGTH_SHORT
+            ).show();
+
+            Intent intent = new Intent(
+                    MainActivity.this,
+                    HomeActivity.class
+            );
+
+            startActivity(intent);
+            finish();
+
+        } else {
+
+            Toast.makeText(
+                    MainActivity.this,
+                    "Invalid email or password. Please register first.",
+                    Toast.LENGTH_LONG
+            ).show();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (dbHelper != null) {
+            dbHelper.close();
+        }
+        super.onDestroy();
     }
 }
