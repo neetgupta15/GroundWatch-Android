@@ -13,36 +13,33 @@ import androidx.appcompat.app.AppCompatActivity;
 public class HomeActivity extends AppCompatActivity {
 
     private TextView tvWelcome;
-
     private Button btnFacilities;
     private Button btnReportProblem;
     private Button btnMyReports;
     private Button btnProfile;
+    private Button btnMaintenance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        // Connect Java variables to XML views.
         tvWelcome = findViewById(R.id.tvWelcome);
-
         btnFacilities = findViewById(R.id.btnFacilities);
         btnReportProblem = findViewById(R.id.btnReportProblem);
         btnMyReports = findViewById(R.id.btnMyReports);
         btnProfile = findViewById(R.id.btnProfile);
+        btnMaintenance = findViewById(R.id.btnMaintenance);
 
-        SharedPreferences preferences =
+        // Display the logged-in user's name.
+        SharedPreferences prefs =
                 getSharedPreferences("GroundWatchPrefs", MODE_PRIVATE);
 
-        String name = preferences.getString("userName", "");
+        String userName = prefs.getString("userName", "User");
+        tvWelcome.setText("Welcome, " + userName + "!");
 
-        if (name != null && !name.isEmpty()) {
-            tvWelcome.setText("Welcome, " + name + "!");
-        } else {
-            tvWelcome.setText("Welcome to GroundWatch");
-        }
-
-        // Open Sports Facilities screen
+        // Open Facilities.
         btnFacilities.setOnClickListener(v -> {
             Intent intent = new Intent(
                     HomeActivity.this,
@@ -51,28 +48,40 @@ public class HomeActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        btnReportProblem.setOnClickListener(v ->
-                Toast.makeText(
-                        HomeActivity.this,
-                        "Report Problem coming soon",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        // Open Report Problem.
+        btnReportProblem.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    HomeActivity.this,
+                    ReportProblemActivity.class
+            );
+            startActivity(intent);
+        });
 
-        btnMyReports.setOnClickListener(v ->
-                Toast.makeText(
-                        HomeActivity.this,
-                        "My Reports coming soon",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        // Open My Reports.
+        btnMyReports.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    HomeActivity.this,
+                    MyReportsActivity.class
+            );
+            startActivity(intent);
+        });
 
-        btnProfile.setOnClickListener(v ->
-                Toast.makeText(
-                        HomeActivity.this,
-                        "Profile coming soon",
-                        Toast.LENGTH_SHORT
-                ).show()
-        );
+        // Open Profile.
+        btnProfile.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    HomeActivity.this,
+                    ProfileActivity.class
+            );
+            startActivity(intent);
+        });
+
+        // Open Maintenance Tracking.
+        btnMaintenance.setOnClickListener(v -> {
+            Intent intent = new Intent(
+                    HomeActivity.this,
+                    MaintenanceActivity.class
+            );
+            startActivity(intent);
+        });
     }
 }

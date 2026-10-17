@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Report a Problem"
+            android:textSize="26sp"
+            android:textStyle="bold"
+            android:paddingBottom="8dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Select the facility where you noticed a problem."
+            android:textSize="15sp"
+            android:paddingBottom="16dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sports Facility"
+            android:textStyle="bold"
+            android:paddingBottom="6dp" />
+        <Spinner
+            android:id="@+id/spFacility"
+            android:layout_width="match_parent"
+            android:layout_height="48dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Problem Category"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:paddingBottom="6dp" />
+        <Spinner
+            android:id="@+id/spCategory"
+            android:layout_width="match_parent"
+            android:layout_height="48dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Severity"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:paddingBottom="6dp" />
+        <Spinner
+            android:id="@+id/spSeverity"
+            android:layout_width="match_parent"
+            android:layout_height="48dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Problem Description"
+            android:textStyle="bold"
+            android:paddingTop="16dp"
+            android:paddingBottom="6dp" />
+        <EditText
+            android:id="@+id/etDescription"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:gravity="top|start"
+            android:hint="Describe the problem..."
+            android:inputType="textMultiLine|textCapSentences"
+            android:padding="12dp" />
+        <Button
+            android:id="@+id/btnSubmitReport"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Submit Report"
+            android:layout_marginTop="24dp" />
+    </LinearLayout>
+</ScrollView>

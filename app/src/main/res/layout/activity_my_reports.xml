@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="My Reports"
+        android:textSize="26sp"
+        android:textStyle="bold"
+        android:paddingBottom="12dp" />
+    <TextView
+        android:id="@+id/tvNoReports"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No reports submitted yet."
+        android:textSize="16sp"
+        android:gravity="center"
+        android:padding="20dp"
+        android:visibility="gone" />
+    <ListView
+        android:id="@+id/lvMyReports"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:dividerHeight="12dp"
+        android:paddingBottom="8dp" />
+</LinearLayout>
