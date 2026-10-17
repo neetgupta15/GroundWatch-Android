@@ -28,6 +28,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         dbHelper = new DBHelper(this);
+        dbHelper.getWritableDatabase();
 
         etEmail = findViewById(R.id.etEmail);
         etPassword = findViewById(R.id.etPassword);
@@ -37,9 +38,13 @@ public class MainActivity extends AppCompatActivity {
         btnLogin.setOnClickListener(v -> validateLogin());
 
         tvRegister.setOnClickListener(v -> {
+            String role = dbHelper.getUserRole(String.valueOf(etEmail));
+
             Intent intent = new Intent(
                     MainActivity.this,
-                    RegisterActivity.class
+                    "admin".equals(role)
+                            ? activity_admin_home.class
+                            : HomeActivity.class
             );
             startActivity(intent);
         });

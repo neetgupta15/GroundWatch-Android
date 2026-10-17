@@ -355,6 +355,17 @@ public class DBHelper extends SQLiteOpenHelper {
         return format.format(new java.util.Date());
     }
 
+    public String getUserRole(String email) {
+        try (Cursor cursor = getReadableDatabase().rawQuery(
+                "SELECT role FROM Users WHERE email = ?",
+                new String[]{email}
+        )) {
+            return cursor.moveToFirst()
+                    ? cursor.getString(0)
+                    : "";
+        }
+    }
+
     // Get the sport associated with a facility.
     private String getSportForFacility(SQLiteDatabase db, String facilityName) {
 
