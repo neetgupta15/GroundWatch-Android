@@ -1,26 +1,35 @@
-
 package com.example.groundwatch;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 public class DBHelper extends SQLiteOpenHelper {
 
+    private static final String TAG = "GroundWatchDB";
+
     private static final String DATABASE_NAME = "GroundWatch.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     public DBHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
 
+    // ---------------------------------------------------------
+    // DATABASE CREATION
+    // ---------------------------------------------------------
+
     @Override
     public void onCreate(SQLiteDatabase db) {
-        createSiteTable(db);
 
-        // Users table
         db.execSQL(
                 "CREATE TABLE IF NOT EXISTS Users (" +
                         "user_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -30,7 +39,6 @@ public class DBHelper extends SQLiteOpenHelper {
                         "role TEXT DEFAULT 'user')"
         );
 
-        // Sports facilities table
         db.execSQL(
                 "CREATE TABLE IF NOT EXISTS Facilities (" +
                         "facility_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -41,7 +49,6 @@ public class DBHelper extends SQLiteOpenHelper {
                         "status TEXT DEFAULT 'Available')"
         );
 
-        // Problem reports table
         db.execSQL(
                 "CREATE TABLE IF NOT EXISTS Reports (" +
                         "report_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -56,10 +63,10 @@ public class DBHelper extends SQLiteOpenHelper {
                         "status TEXT DEFAULT 'Reported', " +
                         "date TEXT, " +
                         "FOREIGN KEY(user_id) REFERENCES Users(user_id), " +
-                        "FOREIGN KEY(facility_id) REFERENCES Facilities(facility_id))"
+                        "FOREIGN KEY(facility_id) " +
+                        "REFERENCES Facilities(facility_id))"
         );
 
-        // Maintenance tracking table
         db.execSQL(
                 "CREATE TABLE IF NOT EXISTS Maintenance (" +
                         "maintenance_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
@@ -68,33 +75,17 @@ public class DBHelper extends SQLiteOpenHelper {
                         "start_date TEXT, " +
                         "completion_date TEXT, " +
                         "status TEXT DEFAULT 'Pending', " +
-                        "FOREIGN KEY(report_id) REFERENCES Reports(report_id))"
+                        "FOREIGN KEY(report_id) " +
+                        "REFERENCES Reports(report_id))"
         );
 
-        // Insert sample facilities only when the table is empty.
-        Cursor cursor = db.rawQuery(
-                "SELECT COUNT(*) FROM Facilities", null
-        );
-
-        try {
-            if (cursor.moveToFirst() && cursor.getInt(0) == 0) {
-                insertFacility(db, "Cricket Ground", "Cricket");
-                insertFacility(db, "Football Ground", "Football");
-                insertFacility(db, "Basketball Court", "Basketball");
-                insertFacility(db, "Badminton Court", "Badminton");
-            }
-        } finally {
-            cursor.close();
-        }
+        createSiteTable(db);
+        ensureDefaultFacilities(db);
     }
 
-    private void insertFacility(SQLiteDatabase db, String name, String sport) {
-        ContentValues values = new ContentValues();
-        values.put("name", name);
-        values.put("sport", sport);
-        values.put("status", "Available");
-        db.insert("Facilities", null, values);
-    }
+    // ---------------------------------------------------------
+    // DATABASE UPGRADES
+    // ---------------------------------------------------------
 
     @Override
     public void onUpgrade(
@@ -106,141 +97,268 @@ public class DBHelper extends SQLiteOpenHelper {
         if (oldVersion < 2) {
             createSiteTable(db);
         }
+
+        if (oldVersion < 3) {
+            ensureDefaultFacilities(db);
+        }
     }
 
-    // Register a new user.
-    public boolean insertUser(String name, String email, String password) {
+    // ---------------------------------------------------------
+    // DEFAULT FACILITIES
+    // ---------------------------------------------------------
 
-        SQLiteDatabase db = this.getWritableDatabase();
+    private void ensureDefaultFacilities(SQLiteDatabase db) {
+
+        String[][] facilities = {
+                {"Cricket Ground", "Cricket"},
+                {"Football Ground", "Football"},
+                {"Basketball Court", "Basketball"},
+                {"Badminton Court", "Badminton"}
+        };
+
+        for (String[] facility : facilities) {
+
+            boolean exists;
+
+            try (Cursor cursor = db.rawQuery(
+                    "SELECT facility_id FROM Facilities " +
+                            "WHERE name = ? LIMIT 1",
+                    new String[]{facility[0]}
+            )) {
+                exists = cursor.moveToFirst();
+            }
+
+            if (!exists) {
+
+                ContentValues values = new ContentValues();
+
+                values.put("name", facility[0]);
+                values.put("sport", facility[1]);
+                values.put("status", "Available");
+
+                db.insertOrThrow(
+                        "Facilities",
+                        null,
+                        values
+                );
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // USER REGISTRATION
+    // ---------------------------------------------------------
+
+    public boolean insertUser(
+            String name,
+            String email,
+            String password
+    ) {
+
+        if (isBlank(name)
+                || isBlank(email)
+                || password == null
+                || password.length() < 6) {
+            return false;
+        }
+
         ContentValues values = new ContentValues();
 
-        values.put("name", name);
+        values.put("name", name.trim());
         values.put("email", email.trim());
         values.put("password", password);
         values.put("role", "user");
 
-        long result = db.insert("Users", null, values);
-        return result != -1;
-    }
-
-    // Check login credentials.
-    public boolean checkUser(String email, String password) {
-
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        Cursor cursor = db.rawQuery(
-                "SELECT user_id FROM Users WHERE email = ? AND password = ?",
-                new String[]{email.trim(), password}
-        );
-
         try {
-            return cursor.moveToFirst();
-        } finally {
-            cursor.close();
+            return getWritableDatabase().insertOrThrow(
+                    "Users",
+                    null,
+                    values
+            ) != -1;
+
+        } catch (SQLiteException exception) {
+
+            Log.e(
+                    TAG,
+                    "Unable to register user",
+                    exception
+            );
+
+            return false;
         }
     }
 
-    // Get a user's name using their email.
+    // ---------------------------------------------------------
+    // LOGIN
+    // ---------------------------------------------------------
+
+    public boolean checkUser(
+            String email,
+            String password
+    ) {
+
+        if (isBlank(email) || password == null) {
+            return false;
+        }
+
+        try (Cursor cursor = getReadableDatabase().rawQuery(
+                "SELECT user_id FROM Users " +
+                        "WHERE email = ? AND password = ?",
+                new String[]{
+                        email.trim(),
+                        password
+                }
+        )) {
+            return cursor.moveToFirst();
+        }
+    }
+
     public String getUserName(String email) {
 
-        SQLiteDatabase db = this.getReadableDatabase();
+        if (isBlank(email)) {
+            return "";
+        }
 
-        Cursor cursor = db.rawQuery(
+        try (Cursor cursor = getReadableDatabase().rawQuery(
                 "SELECT name FROM Users WHERE email = ?",
                 new String[]{email.trim()}
-        );
-
-        try {
-            if (cursor.moveToFirst()) {
-                return cursor.getString(0);
-            }
-            return "";
-        } finally {
-            cursor.close();
+        )) {
+            return cursor.moveToFirst()
+                    ? cursor.getString(0)
+                    : "";
         }
     }
 
-    // Submit a new problem report.
+    public String getUserRole(String email) {
+
+        if (isBlank(email)) {
+            return "";
+        }
+
+        try (Cursor cursor = getReadableDatabase().rawQuery(
+                "SELECT role FROM Users WHERE email = ?",
+                new String[]{email.trim()}
+        )) {
+            return cursor.moveToFirst()
+                    ? cursor.getString(0)
+                    : "";
+        }
+    }
+
+    // ---------------------------------------------------------
+    // SUBMIT A REPORT
+    // ---------------------------------------------------------
+
+    /*
+     * The severity parameter is retained for compatibility with
+     * the existing ReportProblemActivity.
+     *
+     * New reports always start as Unassigned.
+     * Only an admin can assign their severity later.
+     */
     public long insertReport(
             String userEmail,
             String facility,
             String category,
             String description,
             String severity,
-            String date) {
+            String date
+    ) {
 
-        SQLiteDatabase db = this.getWritableDatabase();
-        Cursor cursor = null;
+        if (isBlank(userEmail)
+                || isBlank(facility)
+                || isBlank(category)
+                || isBlank(description)) {
+            return -1;
+        }
+
+        SQLiteDatabase db = getWritableDatabase();
 
         db.beginTransaction();
 
         try {
-            int userId = -1;
-            int facilityId = -1;
 
-            cursor = db.rawQuery(
+            int userId;
+            int facilityId;
+
+            try (Cursor cursor = db.rawQuery(
                     "SELECT user_id FROM Users WHERE email = ?",
                     new String[]{userEmail.trim()}
-            );
+            )) {
 
-            if (cursor.moveToFirst()) {
+                if (!cursor.moveToFirst()) {
+                    return -1;
+                }
+
                 userId = cursor.getInt(0);
             }
-            cursor.close();
-            cursor = null;
 
-            if (userId == -1) {
-                return -1;
-            }
+            try (Cursor cursor = db.rawQuery(
+                    "SELECT facility_id FROM Facilities " +
+                            "WHERE name = ? LIMIT 1",
+                    new String[]{facility.trim()}
+            )) {
 
-            cursor = db.rawQuery(
-                    "SELECT facility_id FROM Facilities WHERE name = ?",
-                    new String[]{facility}
-            );
+                if (!cursor.moveToFirst()) {
+                    return -1;
+                }
 
-            if (cursor.moveToFirst()) {
                 facilityId = cursor.getInt(0);
-            }
-            cursor.close();
-            cursor = null;
-
-            if (facilityId == -1) {
-                return -1;
             }
 
             ContentValues values = new ContentValues();
+
             values.put("user_id", userId);
             values.put("facility_id", facilityId);
-            values.put("category", category);
-            values.put("description", description);
+            values.put("category", category.trim());
+            values.put("description", description.trim());
             values.put("severity", "Unassigned");
             values.put("status", "Reported");
-            values.put("date", date);
 
-            long reportId = db.insert("Reports", null, values);
+            values.put(
+                    "date",
+                    isBlank(date) ? getCurrentDate() : date
+            );
 
-            if (reportId != -1) {
-                db.setTransactionSuccessful();
-            }
+            long reportId = db.insertOrThrow(
+                    "Reports",
+                    null,
+                    values
+            );
+
+            db.setTransactionSuccessful();
 
             return reportId;
 
+        } catch (SQLiteException exception) {
+
+            Log.e(
+                    TAG,
+                    "Unable to submit report",
+                    exception
+            );
+
+            return -1;
+
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
             db.endTransaction();
         }
     }
 
-    // Get reports submitted by a particular user.
-    // The caller must close the returned Cursor.
+    // ---------------------------------------------------------
+    // REPORT QUERIES
+    // Caller must close the returned Cursor.
+    // ---------------------------------------------------------
+
     public Cursor getReportsByUser(String userEmail) {
 
-        SQLiteDatabase db = this.getReadableDatabase();
+        String email = userEmail == null
+                ? ""
+                : userEmail.trim();
 
-        return db.rawQuery(
-                "SELECT Reports.report_id, " +
+        return getReadableDatabase().rawQuery(
+                "SELECT " +
+                        "Reports.report_id, " +
                         "Facilities.name, " +
                         "Reports.category, " +
                         "Reports.description, " +
@@ -248,23 +366,35 @@ public class DBHelper extends SQLiteOpenHelper {
                         "Reports.status, " +
                         "Reports.date " +
                         "FROM Reports " +
-                        "INNER JOIN Users ON Reports.user_id = Users.user_id " +
-                        "INNER JOIN Facilities ON Reports.facility_id = Facilities.facility_id " +
+                        "INNER JOIN Users " +
+                        "ON Reports.user_id = Users.user_id " +
+                        "INNER JOIN Facilities " +
+                        "ON Reports.facility_id = Facilities.facility_id " +
                         "WHERE Users.email = ? " +
                         "ORDER BY Reports.report_id DESC",
-                new String[]{userEmail.trim()}
+                new String[]{email}
         );
     }
 
-    // Get all reports for the maintenance tracking screen.
-    // Column order must match MaintenanceActivity.java.
-    // The caller must close the returned Cursor.
+    /*
+     * Column order used by MaintenanceActivity and MyReportsActivity:
+     *
+     * 0: report ID
+     * 1: reporter name
+     * 2: facility name
+     * 3: category
+     * 4: description
+     * 5: severity
+     * 6: status
+     * 7: date
+     *
+     * These screens must retain their Session admin checks.
+     */
     public Cursor getAllReportsForMaintenance() {
 
-        SQLiteDatabase db = this.getReadableDatabase();
-
-        return db.rawQuery(
-                "SELECT Reports.report_id, " +
+        return getReadableDatabase().rawQuery(
+                "SELECT " +
+                        "Reports.report_id, " +
                         "Users.name, " +
                         "Facilities.name, " +
                         "Reports.category, " +
@@ -273,113 +403,18 @@ public class DBHelper extends SQLiteOpenHelper {
                         "Reports.status, " +
                         "Reports.date " +
                         "FROM Reports " +
-                        "LEFT JOIN Users ON Reports.user_id = Users.user_id " +
-                        "LEFT JOIN Facilities ON Reports.facility_id = Facilities.facility_id " +
+                        "LEFT JOIN Users " +
+                        "ON Reports.user_id = Users.user_id " +
+                        "LEFT JOIN Facilities " +
+                        "ON Reports.facility_id = Facilities.facility_id " +
                         "ORDER BY Reports.report_id DESC",
                 null
         );
     }
 
-    // Update a report's maintenance status.
-    public boolean updateReportStatus(
-            String email, int reportId,
-            String newStatus
-    ) {
-
-        if (!"admin".equals(getUserRole(email))) {
-            return false;
-        }
-
-        if (!"Pending".equals(newStatus)
-                && !"In Progress".equals(newStatus)
-                && !"Completed".equals(newStatus)) {
-            return false;
-        }
-
-        SQLiteDatabase db = this.getWritableDatabase();
-        db.beginTransaction();
-
-        try {
-            ContentValues reportValues = new ContentValues();
-            reportValues.put("status", newStatus);
-
-            int updatedRows = db.update(
-                    "Reports",
-                    reportValues,
-                    "report_id = ?",
-                    new String[]{String.valueOf(reportId)}
-            );
-
-            if (updatedRows == 0) {
-                return false;
-            }
-
-            Cursor cursor = db.rawQuery(
-                    "SELECT maintenance_id FROM Maintenance WHERE report_id = ?",
-                    new String[]{String.valueOf(reportId)}
-            );
-
-            boolean maintenanceExists;
-            try {
-                maintenanceExists = cursor.moveToFirst();
-            } finally {
-                cursor.close();
-            }
-
-            ContentValues maintenanceValues = new ContentValues();
-            maintenanceValues.put("status", newStatus);
-
-            if ("In Progress".equals(newStatus)) {
-                maintenanceValues.put("start_date", getCurrentDate());
-            }
-
-            if ("Completed".equals(newStatus)) {
-                maintenanceValues.put("completion_date", getCurrentDate());
-            }
-
-            if (maintenanceExists) {
-                db.update(
-                        "Maintenance",
-                        maintenanceValues,
-                        "report_id = ?",
-                        new String[]{String.valueOf(reportId)}
-                );
-            } else {
-                maintenanceValues.put("report_id", reportId);
-                db.insert("Maintenance", null, maintenanceValues);
-            }
-
-            db.setTransactionSuccessful();
-            return true;
-
-        } catch (Exception e) {
-            return false;
-
-        } finally {
-            db.endTransaction();
-        }
-    }
-
-    private String getCurrentDate() {
-        java.text.SimpleDateFormat format =
-                new java.text.SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm",
-                        java.util.Locale.getDefault()
-                );
-
-        return format.format(new java.util.Date());
-    }
-
-    public String getUserRole(String email) {
-        try (Cursor cursor = getReadableDatabase().rawQuery(
-                "SELECT role FROM Users WHERE email = ?",
-                new String[]{email}
-        )) {
-            return cursor.moveToFirst()
-                    ? cursor.getString(0)
-                    : "";
-        }
-    }
+    // ---------------------------------------------------------
+    // ADMIN: ASSIGN SEVERITY
+    // ---------------------------------------------------------
 
     public boolean updateReportSeverity(
             String adminEmail,
@@ -400,15 +435,186 @@ public class DBHelper extends SQLiteOpenHelper {
         ContentValues values = new ContentValues();
         values.put("severity", severity);
 
-        int updatedRows = getWritableDatabase().update(
-                "Reports",
-                values,
-                "report_id = ?",
-                new String[]{String.valueOf(reportId)}
-        );
+        try {
 
-        return updatedRows == 1;
+            int updatedRows = getWritableDatabase().update(
+                    "Reports",
+                    values,
+                    "report_id = ?",
+                    new String[]{String.valueOf(reportId)}
+            );
+
+            return updatedRows == 1;
+
+        } catch (SQLiteException exception) {
+
+            Log.e(
+                    TAG,
+                    "Unable to update report severity",
+                    exception
+            );
+
+            return false;
+        }
     }
+
+    // ---------------------------------------------------------
+    // ADMIN: UPDATE MAINTENANCE STATUS
+    // ---------------------------------------------------------
+
+    public boolean updateReportStatus(
+            String adminEmail,
+            int reportId,
+            String newStatus
+    ) {
+
+        if (!"admin".equals(getUserRole(adminEmail))) {
+            return false;
+        }
+
+        if (!"Pending".equals(newStatus)
+                && !"In Progress".equals(newStatus)
+                && !"Completed".equals(newStatus)) {
+            return false;
+        }
+
+        SQLiteDatabase db = getWritableDatabase();
+
+        db.beginTransaction();
+
+        try {
+
+            boolean maintenanceExists;
+
+            String previousStatus = null;
+            String previousStartDate = null;
+            String previousCompletionDate = null;
+
+            try (Cursor cursor = db.rawQuery(
+                    "SELECT status, start_date, completion_date " +
+                            "FROM Maintenance WHERE report_id = ?",
+                    new String[]{String.valueOf(reportId)}
+            )) {
+
+                maintenanceExists = cursor.moveToFirst();
+
+                if (maintenanceExists) {
+                    previousStatus = cursor.getString(0);
+                    previousStartDate = cursor.getString(1);
+                    previousCompletionDate = cursor.getString(2);
+                }
+            }
+
+            ContentValues reportValues = new ContentValues();
+            reportValues.put("status", newStatus);
+
+            int reportRows = db.update(
+                    "Reports",
+                    reportValues,
+                    "report_id = ?",
+                    new String[]{String.valueOf(reportId)}
+            );
+
+            if (reportRows != 1) {
+                return false;
+            }
+
+            ContentValues maintenanceValues = new ContentValues();
+            maintenanceValues.put("status", newStatus);
+
+            String now = getCurrentDate();
+
+            if ("Pending".equals(newStatus)) {
+
+                maintenanceValues.putNull("start_date");
+                maintenanceValues.putNull("completion_date");
+
+            } else if ("In Progress".equals(newStatus)) {
+
+                boolean keepStartDate =
+                        "In Progress".equals(previousStatus)
+                                && !isBlank(previousStartDate);
+
+                maintenanceValues.put(
+                        "start_date",
+                        keepStartDate ? previousStartDate : now
+                );
+
+                maintenanceValues.putNull("completion_date");
+
+            } else {
+
+                if (isBlank(previousStartDate)) {
+                    maintenanceValues.putNull("start_date");
+                } else {
+                    maintenanceValues.put(
+                            "start_date",
+                            previousStartDate
+                    );
+                }
+
+                boolean keepCompletionDate =
+                        "Completed".equals(previousStatus)
+                                && !isBlank(previousCompletionDate);
+
+                maintenanceValues.put(
+                        "completion_date",
+                        keepCompletionDate
+                                ? previousCompletionDate
+                                : now
+                );
+            }
+
+            if (maintenanceExists) {
+
+                int maintenanceRows = db.update(
+                        "Maintenance",
+                        maintenanceValues,
+                        "report_id = ?",
+                        new String[]{String.valueOf(reportId)}
+                );
+
+                if (maintenanceRows != 1) {
+                    return false;
+                }
+
+            } else {
+
+                maintenanceValues.put("report_id", reportId);
+
+                long maintenanceId = db.insertOrThrow(
+                        "Maintenance",
+                        null,
+                        maintenanceValues
+                );
+
+                if (maintenanceId == -1) {
+                    return false;
+                }
+            }
+
+            db.setTransactionSuccessful();
+
+            return true;
+
+        } catch (SQLiteException exception) {
+
+            Log.e(
+                    TAG,
+                    "Unable to update maintenance for report " + reportId,
+                    exception
+            );
+
+            return false;
+
+        } finally {
+            db.endTransaction();
+        }
+    }
+
+    // ---------------------------------------------------------
+    // FACILITY NAME, TYPE AND ADDRESS
+    // ---------------------------------------------------------
 
     private void createSiteTable(SQLiteDatabase db) {
 
@@ -423,7 +629,8 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(
                 "INSERT OR IGNORE INTO Site " +
                         "(id, name, type, address) VALUES " +
-                        "(1, 'NMIMS Shirpur Sports Facility', 'Private', '')"
+                        "(1, 'NMIMS Shirpur Sports Facility', " +
+                        "'Private', '')"
         );
     }
 
@@ -435,6 +642,7 @@ public class DBHelper extends SQLiteOpenHelper {
         )) {
 
             if (cursor.moveToFirst()) {
+
                 return new String[]{
                         cursor.getString(0),
                         cursor.getString(1),
@@ -457,7 +665,7 @@ public class DBHelper extends SQLiteOpenHelper {
             return false;
         }
 
-        if (name.trim().isEmpty() || address.trim().isEmpty()) {
+        if (isBlank(name) || isBlank(address)) {
             return false;
         }
 
@@ -471,32 +679,44 @@ public class DBHelper extends SQLiteOpenHelper {
         values.put("type", type);
         values.put("address", address.trim());
 
-        int updatedRows = getWritableDatabase().update(
-                "Site",
-                values,
-                "id = 1",
-                null
-        );
-
-        return updatedRows == 1;
-    }
-
-    // Get the sport associated with a facility.
-    private String getSportForFacility(SQLiteDatabase db, String facilityName) {
-
-        Cursor cursor = db.rawQuery(
-                "SELECT sport FROM Facilities WHERE name = ?",
-                new String[]{facilityName}
-        );
-
         try {
-            if (cursor.moveToFirst()) {
-                return cursor.getString(0);
-            }
-            return "";
-        } finally {
-            cursor.close();
+
+            int updatedRows = getWritableDatabase().update(
+                    "Site",
+                    values,
+                    "id = 1",
+                    null
+            );
+
+            return updatedRows == 1;
+
+        } catch (SQLiteException exception) {
+
+            Log.e(
+                    TAG,
+                    "Unable to update facility details",
+                    exception
+            );
+
+            return false;
         }
     }
 
+    // ---------------------------------------------------------
+    // UTILITY METHODS
+    // ---------------------------------------------------------
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String getCurrentDate() {
+
+        SimpleDateFormat format = new SimpleDateFormat(
+                "yyyy-MM-dd HH:mm",
+                Locale.getDefault()
+        );
+
+        return format.format(new Date());
+    }
 }

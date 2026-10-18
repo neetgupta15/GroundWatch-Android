@@ -126,7 +126,9 @@ public class MaintenanceActivity extends AppCompatActivity  {
     protected void onResume() {
         super.onResume();
 
-        if (dbHelper != null && reportDetails != null) {
+        if (dbHelper != null
+                && reportDetails != null
+                && Session.require(this, true)) {
             loadReports();
         }
     }
@@ -163,7 +165,7 @@ public class MaintenanceActivity extends AppCompatActivity  {
                                 "\nStatus: " + safeText(status) +
                                 "\nReported by: " + safeText(reporter) +
                                 "\nDate: " + safeText(date) +
-                                "\n\nTap to update status";
+                                "\n\nTap to assign severity or update status";
 
                 reportDetails.add(details);
             }

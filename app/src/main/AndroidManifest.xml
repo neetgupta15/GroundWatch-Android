@@ -46,9 +46,6 @@
         <activity
             android:name=".MaintenanceActivity"
             android:exported="false" />
-        <activity
-            android:name=".activity_admin_home"
-            android:exported="false" />
     </application>
 
 </manifest>
