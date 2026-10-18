@@ -8,6 +8,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
+import android.database.Cursor;
+import java.util.ArrayList;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -24,12 +26,7 @@ public class ReportProblemActivity extends AppCompatActivity {
 
     private DBHelper dbHelper;
 
-    private final String[] facilities = {
-            "Cricket Ground",
-            "Football Ground",
-            "Basketball Court",
-            "Badminton Court"
-    };
+
 
     private final String[] categories = {
             "Select Problem Category",
@@ -58,8 +55,46 @@ public class ReportProblemActivity extends AppCompatActivity {
         etDescription = findViewById(R.id.etDescription);
         btnSubmitReport = findViewById(R.id.btnSubmitReport);
 
-        setSpinnerAdapter(spFacility, facilities);
+        ArrayList<String> facilityNames = new ArrayList<>();
+
+        try (Cursor cursor = dbHelper.getAllFacilities()) {
+
+            while (cursor.moveToNext()) {
+                facilityNames.add(cursor.getString(1));
+            }
+        }
+
+        setSpinnerAdapter(
+                spFacility,
+                facilityNames.toArray(new String[0])
+        );
+
+        String selectedFacility = getIntent().getStringExtra(
+                "facility_name"
+        );
+
+        if (selectedFacility != null) {
+
+            int position = facilityNames.indexOf(selectedFacility);
+
+            if (position >= 0) {
+                spFacility.setSelection(position);
+            }
+        }
+
+        btnSubmitReport.setEnabled(!facilityNames.isEmpty());
         setSpinnerAdapter(spCategory, categories);
+
+        if (spFacility.getSelectedItem() == null) {
+
+            Toast.makeText(
+                    this,
+                    "No facilities are available for reporting.",
+                    Toast.LENGTH_LONG
+            ).show();
+
+            return;
+        }
 
         btnSubmitReport.setOnClickListener(v -> submitReport());
     }

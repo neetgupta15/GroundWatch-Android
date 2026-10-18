@@ -611,6 +611,14 @@ public class DBHelper extends SQLiteOpenHelper {
             db.endTransaction();
         }
     }
+    public Cursor getAllFacilities() {
+
+        return getReadableDatabase().rawQuery(
+                "SELECT facility_id, name, sport, status " +
+                        "FROM Facilities ORDER BY facility_id",
+                null
+        );
+    }
 
     // ---------------------------------------------------------
     // FACILITY NAME, TYPE AND ADDRESS
