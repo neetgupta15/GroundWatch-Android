@@ -40,6 +40,10 @@ public class HomeActivity extends AppCompatActivity {
 
 
         setContentView(R.layout.activity_home);
+        findViewById(R.id.btnUserMap)
+                .setOnClickListener(v ->
+                        MapsHelper.openFacility(this)
+                );
 
         String name = getSharedPreferences(
                 "GroundWatchPrefs",
